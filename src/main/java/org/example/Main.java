@@ -15,8 +15,26 @@ public class Main {
                 } else {
                     sizeToFreq.put(count, 1);
                 }
+                sizeToFreq.notify();
             }
         };
+
+        Runnable logic2 = () -> {
+            while (!Thread.interrupted()) {
+                synchronized (sizeToFreq) {
+                    try {
+                        sizeToFreq.wait();
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                    int max = findMax(sizeToFreq);
+                    System.out.println("Самое частое количество повторений " + max + " (встретилось " + sizeToFreq.get(max) + " раз)");
+                }
+            }
+        };
+
+        Thread thread2 = new Thread(logic2);
+        thread2.start();
 
         List<Thread> threads = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
@@ -27,14 +45,7 @@ public class Main {
         for (Thread thread : threads) {
             thread.join();
         }
-
-        int max = findMax(sizeToFreq);
-
-        System.out.println("Самое частое количество повторений " + max + " (встретилось " + sizeToFreq.get(max) + " раз)");
-        System.out.println("Другие размеры:");
-        for (int key : sizeToFreq.keySet()) {
-            System.out.println("- " + key + " (" + sizeToFreq.get(key) + " раз)");
-        }
+        thread2.interrupt();
     }
 
     public static int findMax(Map<Integer, Integer> sizeToFreq) {
